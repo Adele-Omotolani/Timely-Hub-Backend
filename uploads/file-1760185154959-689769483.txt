@@ -1,0 +1,119 @@
+To test the routes in Postman, follow these steps:
+
+Ensure your backend server is running locally. According to your setup, it runs on port 5000 by default.
+
+Use the base URL: http://localhost:5000/api
+
+For authentication routes:
+
+Register a new user (POST):
+
+URL: http://localhost:5000/api/auth/register
+Body (JSON):
+
+{
+  "name": "Your Name",
+  "email": "your.email@example.com",
+  "password": "yourpassword"
+}
+On success, you will receive a JWT token.
+Login (POST):
+
+URL: http://localhost:5000/api/auth/login
+Body (JSON):
+
+{
+  "email": "your.email@example.com",
+  "password": "yourpassword"
+}
+On success, you will receive a JWT token.
+For chat routes (require authentication):
+
+In Postman, add an Authorization header with value: Bearer <your_jwt_token> (replace <your_jwt_token> with the token received from login or register).
+
+Send message (POST):
+
+URL: http://localhost:5000/api/chat/message
+Body (JSON):
+
+{
+  "message": "Hello, chatbot!",
+  "chatId": "optional_existing_chat_id"
+}
+If chatId is omitted, a new chat will be created.
+Get chats (GET):
+
+URL: http://localhost:5000/api/chat/chats
+Get specific chat (GET):
+
+URL: http://localhost:5000/api/chat/chat/<chatId>
+Delete chat (DELETE):
+
+URL: http://localhost:5000/api/chat/chat/<chatId>
+You can test the health check endpoint without authentication:
+
+URL: http://localhost:5000/health
+Make sure to set the Content-Type header to application/json for POST requests with JSON bodies.
+
+If you want, I can help you create Postman collections or example curl commands for these endpoints.
+
+
+Task Completed
+To test the routes in Postman, follow these steps:
+
+Ensure your backend server is running locally. According to your setup, it runs on port 5000 by default.
+
+Use the base URL: http://localhost:5000/api
+
+For authentication routes:
+
+Register a new user (POST):
+
+URL: http://localhost:5000/api/auth/register
+Body (JSON):
+
+{
+  "name": "Your Name",
+  "email": "your.email@example.com",
+  "password": "yourpassword"
+}
+On success, you will receive a JWT token.
+Login (POST):
+
+URL: http://localhost:5000/api/auth/login
+Body (JSON):
+
+{
+  "email": "your.email@example.com",
+  "password": "yourpassword"
+}
+On success, you will receive a JWT token.
+For chat routes (require authentication):
+
+In Postman, add an Authorization header with value: Bearer <your_jwt_token> (replace <your_jwt_token> with the token received from login or register).
+
+Send message (POST):
+
+URL: http://localhost:5000/api/chat/message
+Body (JSON):
+
+{
+  "message": "Hello, chatbot!",
+  "chatId": "optional_existing_chat_id"
+}
+If chatId is omitted, a new chat will be created.
+Get chats (GET):
+
+URL: http://localhost:5000/api/chat/chats
+Get specific chat (GET):
+
+URL: http://localhost:5000/api/chat/chat/<chatId>
+Delete chat (DELETE):
+
+URL: http://localhost:5000/api/chat/chat/<chatId>
+You can test the health check endpoint without authentication:
+
+URL: http://localhost:5000/health
+Make sure to set the Content-Type header to application/json for POST requests with JSON bodies.
+
+If you want, I can help you create Postman collections or example curl commands for these endpoints.

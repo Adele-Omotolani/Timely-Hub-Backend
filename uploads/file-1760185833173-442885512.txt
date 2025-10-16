@@ -1,0 +1,218 @@
+import React, { useState, useRef, useEffect } from "react";
+import { FaPaperPlane, FaBars } from "react-icons/fa";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../store";
+import Button from "../../../Components/Button";
+
+const API_BASE = "https://timely-hub-backend.onrender.com/api";
+
+interface Message {
+  id: string;
+  sender: "user" | "ai";
+  message: string;
+  timestamp: number;
+}
+
+interface Chat {
+  _id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const AiChat: React.FC = () => {
+  const auth = useSelector((state: RootState) => state.auth);
+  const token = auth.token;
+
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [chatHistory, setChatHistory] = useState<Chat[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [input, setInput] = useState("");
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_BASE}/chat`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setChatHistory(data);
+        if (data.length > 0) {
+          setCurrentChatId(data[0]._id);
+        }
+      });
+  }, [token]);
+
+  useEffect(() => {
+    if (!token || !currentChatId) return;
+    fetch(`${API_BASE}/chat/${currentChatId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setMessages(
+          data.messages.map((msg: any, idx: number) => ({
+            id: `${msg.role}_${idx}`,
+            sender: msg.role === "assistant" ? "ai" : "user",
+            message: msg.content,
+            timestamp: new Date(msg.timestamp).getTime(),
+          }))
+        );
+      });
+  }, [token, currentChatId]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleNewChat = async () => {
+    if (!token) return;
+    const res = await fetch(`${API_BASE}/chat`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    setChatHistory((prev) => [data, ...prev]);
+    setCurrentChatId(data._id);
+    setMessages([]);
+  };
+
+  const handleLoadChat = (id: string) => {
+    setCurrentChatId(id);
+    setIsHistoryOpen(false);
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || !currentChatId || !token) return;
+
+    const formData = new FormData();
+    formData.append("chatId", currentChatId);
+    formData.append("message", input);
+
+    const res = await fetch(`${API_BASE}/chat/message`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `user_${Date.now()}`,
+        sender: "user",
+        message: data.userMessage.content,
+        timestamp: new Date(data.userMessage.timestamp).getTime(),
+      },
+      {
+        id: `ai_${Date.now()}`,
+        sender: "ai",
+        message: data.assistantMessage.content,
+        timestamp: new Date(data.assistantMessage.timestamp).getTime(),
+      },
+    ]);
+
+    setInput("");
+  };
+
+  return (
+    <div className="relative flex flex-col h-screen bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+      <header className="fixed top-0 left-1/2 -translate-x-1/2 z-10 w-full max-w-[810px] backdrop-blur-md bg-white/70 border-b p-4 flex items-center justify-between shadow-sm">
+        <button
+          onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+          className="p-2 rounded hover:bg-gray-100"
+        >
+          <FaBars />
+        </button>
+        <h1 className="font-bold text-lg">AI Chat</h1>
+        <div className="w-8"></div>
+      </header>
+
+      <div className="flex flex-1 w-full max-w-5xl mx-auto mt-[84px] mb-[72px] overflow-hidden">
+        <aside
+          className={`bg-white border-r border-gray-200 transition-all duration-300 ease-in-out shrink-0 overflow-y-auto ${
+            isHistoryOpen ? "w-64" : "w-0 opacity-0"
+          }`}
+        >
+          <div className="p-4 w-64">
+            <Button text="+ New Chat" onClick={handleNewChat} />
+            <h3 className="text-sm font-semibold text-gray-500 mb-2">Chats</h3>
+            {chatHistory.map((chat) => (
+              <div
+                key={chat._id}
+                onClick={() => handleLoadChat(chat._id)}
+                className={`p-2 rounded-lg cursor-pointer mb-2 ${
+                  currentChatId === chat._id
+                    ? "bg-green-100 border-l-4 border-[#0D9165]"
+                    : "hover:bg-gray-100"
+                }`}
+              >
+                <div className="font-medium text-gray-800">{chat.title}</div>
+                <div className="text-xs text-gray-500">
+                  {new Date(chat.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
+            {messages.length === 0 ? (
+              <div className="flex items-center justify-center h-full min-h-[200px]">
+                <p className="text-gray-500 text-center">
+                  No messages yet. Start a conversation!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex ${
+                      msg.sender === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[80%] px-4 py-2 rounded-2xl ${
+                        msg.sender === "user"
+                          ? "bg-[#0D9165] text-white rounded-br-none"
+                          : "bg-gray-200 text-gray-900 rounded-bl-none"
+                      }`}
+                    >
+                      {msg.message}
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <footer className="fixed bottom-0 left-1/2 -translate-x-1/2 z-10 w-full max-w-[810px] backdrop-blur-md bg-white/70 p-4 shadow-sm">
+        <div className="flex gap-2">
+          <input
+            className="flex-1 border rounded-full px-4 py-2 focus:outline-[#0D9165] bg-white/80 backdrop-blur-sm"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Type a message..."
+          />
+          <button
+            onClick={handleSend}
+            className="bg-[#0D9165] text-white px-4 py-2 rounded-full hover:bg-[#0a7a52] transition-colors"
+          >
+            <FaPaperPlane />
+          </button>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default AiChat;
