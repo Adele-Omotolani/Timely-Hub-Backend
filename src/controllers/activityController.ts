@@ -183,16 +183,69 @@ export const clearAllActivities = async (req: AuthRequest, res: Response) => {
     }
 
     const userId = (req.user as any).id;
+    const userObjectId = (req.user as any)._id || userId; // Get ObjectId for Reminder model
 
-    // Delete all activities for the user from each collection
-    await Promise.all([
-      Reminder.deleteMany({ userId }),
-      Quiz.deleteMany({ userId }),
-      Chat.deleteMany({ userId }),
-      FileModel.deleteMany({ userId })
-    ]);
+    // Delete activities from each collection individually to handle failures gracefully
+    const results = {
+      reminders: { success: false, count: 0, error: null as any },
+      quizzes: { success: false, count: 0, error: null as any },
+      chats: { success: false, count: 0, error: null as any },
+      files: { success: false, count: 0, error: null as any }
+    };
 
-    res.status(200).json({ message: 'All activities cleared successfully' });
+    // Delete reminders (uses ObjectId)
+    try {
+      const reminderResult = await Reminder.deleteMany({ userId: userObjectId });
+      results.reminders = { success: true, count: reminderResult.deletedCount || 0, error: null };
+    } catch (error) {
+      console.error('Error deleting reminders:', error);
+      results.reminders.error = error instanceof Error ? error.message : 'Unknown error';
+    }
+
+    // Delete quizzes (uses string)
+    try {
+      const quizResult = await Quiz.deleteMany({ userId });
+      results.quizzes = { success: true, count: quizResult.deletedCount || 0, error: null };
+    } catch (error) {
+      console.error('Error deleting quizzes:', error);
+      results.quizzes.error = error instanceof Error ? error.message : 'Unknown error';
+    }
+
+    // Delete chats (uses string)
+    try {
+      const chatResult = await Chat.deleteMany({ userId });
+      results.chats = { success: true, count: chatResult.deletedCount || 0, error: null };
+    } catch (error) {
+      console.error('Error deleting chats:', error);
+      results.chats.error = error instanceof Error ? error.message : 'Unknown error';
+    }
+
+    // Delete files (uses string)
+    try {
+      const fileResult = await FileModel.deleteMany({ userId });
+      results.files = { success: true, count: fileResult.deletedCount || 0, error: null };
+    } catch (error) {
+      console.error('Error deleting files:', error);
+      results.files.error = error instanceof Error ? error.message : 'Unknown error';
+    }
+
+    // Calculate total deleted
+    const totalDeleted = results.reminders.count + results.quizzes.count + results.chats.count + results.files.count;
+
+    // Check if any deletions were successful
+    const hasSuccess = results.reminders.success || results.quizzes.success || results.chats.success || results.files.success;
+
+    if (hasSuccess) {
+      res.status(200).json({
+        message: `Activities cleared successfully. Total deleted: ${totalDeleted}`,
+        details: results
+      });
+    } else {
+      res.status(500).json({
+        message: 'Failed to clear any activities',
+        details: results
+      });
+    }
 
   } catch (error) {
     console.error('Error clearing activities:', error);
