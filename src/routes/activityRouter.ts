@@ -10,11 +10,11 @@ const router = express.Router();
 // Define a GET route for '/' that requires authentication (protect middleware) and calls getActivities controller
 router.get('/', protect, getActivities);
 
-// Define a DELETE route for '/:id' that requires authentication and calls deleteActivity controller
-router.delete('/:id', protect, deleteActivity);
-
 // Define a DELETE route for '/clear-all' that requires authentication and calls clearAllActivities controller
 router.delete('/clear-all', protect, clearAllActivities);
+
+// Define a DELETE route for '/:id' that requires authentication and calls deleteActivity controller
+router.delete('/:id', protect, deleteActivity);
 
 // Export the router to be used in the main application
 export default router;
